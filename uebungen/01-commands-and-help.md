@@ -34,9 +34,9 @@ ls -lisahF
 
 Mit dem Kommando `date` kann man sich das aktuelle Datum und die aktuelle Uhrzeit ausgeben lassen. `date` kann aber noch mehr.
 
-1. Angenommen, jetzt ist der 15.05.2025, 13:34 Uhr und 56 Sekunden. Studieret die Dokumentation von `date` und gebt die Formatierungsanweisungen an, mit denen die folgenden Ausgaben erreichen werden können:
+1. Angenommen, jetzt ist der 15.05.2026, 13:34 Uhr und 56 Sekunden. Studieret die Dokumentation von `date` und gebt die Formatierungsanweisungen an, mit denen die folgenden Ausgaben erreichen werden können:
 
-   1. 15.05.2025
+   1. 15.05.2026
    2. 13:34 Uhr (aktuelle Uhrzeit)
 
 2. Wie spät ist es denn gerade in Los Angeles? Versucht die Lösung zuerst in den Manpages zu finden, recherchiert ansonsten im Internet.
