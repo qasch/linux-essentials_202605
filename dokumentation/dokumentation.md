@@ -232,6 +232,9 @@ Einige wichtige Tastenkombinationen:
 - `STRG+S` Datei speichern (unter dem gleichen Namen)
 - `STRG+X` Editor verlassen (bei ungespeicherten Änderungen werden wir gefragt, ob wir diese speichern möchten)
 
+Von der Einfachheit der Bedienung einmal abgesehen - der beste Editor der Welt ist neovim. Keine Frage. :)
+
+## Pattern Matching / Escaping
 
 
 
