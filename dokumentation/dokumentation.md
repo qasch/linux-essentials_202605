@@ -479,6 +479,24 @@ Durch dieses Konzept können wir durch die Kombination simpler Kommandos komplex
 
 Wir können so z.B. auch Ausgaben von Kommandos in Dateien umleiten (-> *Redirects*).
 
+## UNIX Philosophie
+
+Die Unix-Philosophie ist ein Satz von Prinzipien für Software-Design, die ursprünglich in den 1970er Jahren mit dem Unix-Betriebssystem entwickelt wurden. Sie betont Einfachheit, Modularität und Wiederverwendbarkeit.
+
+Douglas McIlroy, der Erfinder der Unixpipes, fasste die Philosophie folgendermaßen zusammen:
+
+- Schreibe Computerprogramme so, dass sie nur eine Aufgabe erledigen und diese gut machen.
+- Schreibe Programme so, dass sie zusammenarbeiten.
+- Schreibe Programme so, dass sie Textströme verarbeiten, denn das ist eine universelle Schnittstelle.
+
+> "Write programs that do one thing and do it well."
+
+## KISS Prinzip
+
+- "Keep it stupid simple"
+- "Keep it super simple"
+- "Keep it simple, stupid!"
+
 ## Redirects
 
 Mit Redirects kann die der Standardausgabekanal oder der Standardfehlerkanal in eine **Datei** umgeleitet werden. Es gibt zwei Arten von Redirects:
@@ -498,8 +516,68 @@ ls -l /etc >> ls-ausgabe.txt
 ```
 
 #### Umleitung des Standardfehlerkanals
+```bash
+ls mich-gibts-nicht  2> ls-fehler.txt     # hier muss die 2 stehen, da wir stderr umleiten
+ls mich-gibts-nicht  2>> ls-fehler.txt    # hier muss die 2 stehen, da wir stderr umleiten
+```
+
+#### Umleitung beider Kanäle
+
+##### in separate Dateien
+```bash
+ls mich-gibts/ mich-gibts-nicht/ 1> ergebnis.txt 2>fehler.txt
+ls mich-gibts/ mich-gibts-nicht/ > ergebnis.txt 2>fehler.txt
+```
+
+##### in die gleiche Datei
+```bash
+ls mich-gibts/ mich-gibts-nicht/ > ergebnis-und-fehler.txt 2>&1
+```
+
+>[!NOTE]
+> Das `&` gibt hier an, dass wir einen *Kanal*/*Filedescriptor* meinen, ansonsten würden die Fehler in eine Datei mit dem Namen `1` umgeleitet werden.
+> Das `2>&1` muss in diesem Fall hinter dem `>` stehen, da die Redirects an sich von links nach rechts ausgewertet werden. `stdout` muss also bereits in die Datei umgeleitet sein, damit auch `stderr` dorthin schreibt. Ansonsten würde der Fehlerkanal mit dem *eigentlichen* Ziel, nämlich der Shell verknüpft werden.
+
+```bash
+ls mich-gibts/ mich-gibts-nicht/ &> ergebnis-und-fehler.txt
+```
+>[!NOTE]
+> Verkürzte Schreibweise
 
 
+###### Eigenbaulösung
+Theoretisch könnte man sich obiges Verhalten auch selber bauen, z.B. so:
+```bash
+ls mich-gibts/ mich-gibts-nicht/ > ergebnis-und-fehler.txt 2>> ergebnis-und-fehler.txt
+```
+
+Das **kann** gut gehen, aber auch zu einem nicht gewollten Verhalten führen, da beide Filedescriptoren versuchen, **zur gleichen Zeit** in die gleiche Datei zu schreiben, was zu einer *Race Condition* führen kann:
+
+|Zeitpunkt | stdout schreibt | stderr schreibt | Dateiinhalt |
+| -------- | --------------- | --------------- | ----------- |
+|t0         | (Position 0)    | (Position 0)   | ""          |
+|t1         | "mich-gibts:\n"    | -               | "mich-gibts:\n" |
+|           |(Position → 12)  |     (Position 0)|        |
+|t2         |"test\n"         | -              | "mydir:\ntest\n"|
+|           |(Position → 17)  |     (Position 0)|  |
+|t3         | -               | "ls: cannot access..."|"ls: cannot a..."|
+|           |                 | (Position → 65) | |
+
+Das Problem: Beide Zeiger starten bei Position 0.
+
+Wenn `stderr` später schreibt, überschreibt es teilweise das, was `stdout` geschrieben hat. Die genaue Ausgabe hängt davon ab:
+
+- Wie schnell die Prozesse schreiben
+- Wann das Betriebssystem die Schreiboperationen ausführt
+- Puffergröße und Timing
+
+Daher erscheint entweder gar keine Fehlermeldung, oder sie ist abgeschnitten etc.
+
+##### Warum funktioniert `2>&1`?
+- `>`  öffnet Filedescriptor 1 für die Datei
+- `2>&1` macht Filedescriptor 2 zu einer Kopie von Filedescriptor 1
+- Beide teilen sich denselben Schreibzeiger
+- Die Shell koordiniert die Schreibvorgänge, so dass es zu keinen Überschreibungen kommt
 
 
 
