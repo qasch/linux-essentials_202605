@@ -580,6 +580,91 @@ Daher erscheint entweder gar keine Fehlermeldung, oder sie ist abgeschnitten etc
 - Die Shell koordiniert die Schreibvorgänge, so dass es zu keinen Überschreibungen kommt
 
 
+#### Umleitung einer Datei in ein Kommando
+
+Wir können auch den Inhalt einer Datei in `stdin` umleiten mit einem "umgedrehten" Redirect `<`. 
+
+Das ist z.B. beim Kommando `tr` nötig, da `tr` keinen Dateinamen als Argument entgegennimmt:
+```bash
+# Ersetzung von , durch ;
+tr "," ";" < file.csv
+```
+>[!NOTE]
+> Obige Syntax führt nicht zu einer Ersetzung innerhalb der Datei, sondern erzeugt nur eine Ausgabe auf `stdout` mit den ersetzten Zeichen.
+```bash
+# Ersetzung von , durch ;, Erstellen einer Datei mit dem Ergebnis
+tr "," ";" < file.csv > file-new.csv
+```
+
+>[!NOTE]
+> Eine Ersetzung in der gleichen Datei ist so mit `tr` nicht möglich. Dazu könnte man andere Kommandos wie z.B. `sed` verwenden.
+
+TODO << <<<
+
+TODO /dev/null
+
+## Kommandopipelines
+
+Kommandopipelines sind ein mächtiges Werkzeug, mit dem sich erst die ganze Stärke der Kommandozeile nutzen lässt.
+
+Syntax:
+```bash
+<kommando1> | <kommando2>
+```
+
+Mit der *Pipe* (`|`) wird `stdout` von `<kommando1>` mit `stdin` von `<kommando2>` verbunden, so dass `<kommando2>` die Ausgabe von `<kommando1>` entgegenehmen und weiterverarbeiten kann.
+
+Wir können durchaus mehrere Kommandos mit Pipes verbinden, sog. *Pipelines*. Die Anzahl ist einzig durch Hardware-Resourcen beschränkt.
+
+```bash
+<kommando1> | <kommando2> | <kommando3> | <kommando4> | <kommando5> ...
+```
+
+### Beispiele:
+**Konzept der UNIX Philosophie und Nutzung der Pipe**
+
+`ls` kann super gut den Inhalt von Verzeichnissen anzeigen, bei grösseren Verzeichnissen müssen wir aber (falls überhaupt möglich) die Maus nutzen, um den Anfang der Ausgabe sehen zu können. 
+
+Wir leiten die Ausgabe also an den *Pager* `less` weiter, der super gut darin ist, Textströme seitenweise anzuzeigen, darin zu scrollen, zu suchen usw.
+```bash
+ls -l /etc/ | less       # der Output von ls -l wird an den Pager less geleitet
+```
+
+**Nur die Usernamen der realen Benutzer anzeigen lassen**
+
+Wir filtern die Datei `/etc/passwd` zuerst nach den Zeilen mit den Usern, die eine Shell (`/bin/bash`, `/bin/sh`, `/bin/zsh` o.ä.) zugewiesen haben. Anschliessend nutzen wir `cut`, um uns nur das erste Feld mit den Usernamen ausgeben zu lassen.
+
+Das Dollarzeichen `$` ist eil eines *regulären Ausdrucks* und steht für das Ende einer Zeile (mehr dazu z.B. in der Manpage von `grep` oder unter `man regex`).
+```bash
+grep "sh$" /etc/passwd | cut -d: -f1
+```
+**Anzahl der realen User ausgeben lassen**
+```bash
+grep "sh$" /etc/passwd | cut -d: -f1 | wc -l
+```
+> [!NOTE]
+> Pipelines bauen wir am besten Stück für Stück auf, wie in einem Baukastensystem. Wir untersuchen die Ausgabe eines Kommandos, nutzen die History um das Kommando erneut aufzurufen, hängen eine Pipe dran, lassen uns das Ergebnis anzeigen, nutzen die History usw.
+
+## Verzeichnisstruktur / FHS
+
+| Verzeichnis | Bedeutung | enthält |
+| ----------- |:-------------: | --------- |
+| `/bin` | *binary* |  ausführbare Dateien, die von allen Benutzern ausgeführt werden können. Normalerweise ein *Symlink* auf `/usr/bin`. |
+| `/sbin` | *superuser binary* |  auch ausführbare Dateien, die allerdings nur von `root` genutzt werden können. Auch ein Symlink auf `/usr/sbin`. |
+| `/boot` | |  den/die Linux Kernel (`vmlinuz-6.1.0-25.amd64`), die zugehörige Initiale RAM Disk (`initrd.img-6.1.0-25-amd64`), weitere für den Bootvorgang wichtige Dateien und die Konfiguration des Bootloaders, z.B. `grub`. |
+| `/dev` | *devices* |  *Gerätedateien*, z.B. für die vorhanden Speichermedien und Partitionen, `/dev/null`, `/dev/random`, die Filedescriptoren `stdin`, `stdout`, `stderr`, Terminals etc. Dieses Verzeichnis wird automatisch vom Dienst `udev` (*Userspace Dev*) überwacht und gepflegt. |
+| `/etc` | *et cetera* / *etsy* |  systemweite Konfigurationsdateien. Diese können für gewisse Programme durch die benutzerspezifischen Konfigurationsdateien (im Heimatverzeichnis der Benutzer) überschrieben werden (`/etc/bash.bashrc` -> `~/.bashrc`). |
+| `/home` | | Heimatverzeichnisse der regulären Benutzer |
+| `/media` `/mnt` | *mount* |  Verzeichnisse für die *Mountpoints* weiterer/externer Datenträger |
+| `/opt` | *optional* | hier können Pakete ihre Dateien ablegen, die nicht über die Standardpaketquellen installiert wurden |
+| `/proc` | *processes* |  Dateien/Informationen über das laufende System: laufende Prozesse, Hardware, Kernelkonfiguration. Existiert nur im RAM, ist ein sog. *virtuelles* oder *Pseudodateisystem* |
+| `/root` | | Heimatverzeichnis des *Superusers* `root` |
+| `/sys` | *system* | ähnlich wie `/proc` bzw. eine nachträgliche Erweiterung,  vor allem Dateien/Informationen zur Hardware, auch ein *virtuelles-* bzw. *Pseudodateisystem*. |
+| `/tmp` | *temp* |  temporäre Dateien |
+| `/usr` | *Unix System Resources* |  Verzeichnisse für die ausführbaren Dateien, Libraries, Source Code, Dokumentationen etc. |
+| `/var` | *variable* |  viele wichtige Dateien wie z.B. *Logdateien* (`/var/log`), E-Mails (`/var/mail`), Cache (`/var/cache`) ... |
+
+
 
 
 
