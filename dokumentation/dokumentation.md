@@ -796,6 +796,95 @@ Es gibt mehrere Terminal-Multiplexer:
 - `tmux` ist der modernere Nachfolger von `screen` mit verbesserter Architektur und Funktionsumfang und Konfigurationsmöglichkeiten
 - `zellij` ist ein der modernste Terminal-Multiplexer, in Rust geschrieben und auf Benutzerfreundlichkeit optimiert (besseres UI, Floating Panes etc.)
 
+## Archivierung und Komprimierung
+
+### Archivierung
+
+*Archivierung* bezeichnet das Zusammenfassen **mehrerer** Dateien und Verzeichnisse in eine **einzige** Datei, ohne zwingende Kompression. Dadurch bleibt die ursprüngliche Struktur der Dateien erhalten (Rechte, Besitzverhältnisse, Grösse, Zeitstempel, Pfadangaben), so können mehrere Dateien einfacher gespeichert oder übertragen werden.
+
+Unter Linux wird das Kommando `tar` (*Tape Archiver*) zur Archivierung verwendet. `tar` ist ein sehr altes Programm und die Syntax (freundlich ausgedrückt) etwas gewöhnungsbedürftig. Kurzoptionen haben oft keine direkte Entsprechung zu den Langoptionen.
+
+Ein `tar`-Archiv kann man sich mit dem Kommando `cat` anzeigen lassen:
+
+![Ausgabe tar Archiv mit cat](./images/ausgabe-tar-archiv-mit-cat.png)
+
+> [!NOTE]
+> Alle numerischen Angaben hier sind im *Oktalformat*. Dies hat historische Gründe. Möchte man den Zeitstempel umrechnen, kann man sich von der BASH helfen lassen:
+> ```bash
+> echo $(( 8#14757403716 ))
+> ```
+
+#### Einige wichtige Optioenen zu `tar`:
+
+>[!NOTE]
+> Bei `tar` ist die Option `-f` sehr wichtig. Damit müssen wir immer den Namen des Archivs angeben, mit dem wir arbeiten wollen. Die Option `-f` erwartet zwingend ein Argument (den Namen/Pfad zu einem Archiv. Der Name muss **direkt** hinter der Option folgen.
+
+```bash
+tar -cvf archive.tar file1 file2    # korrekt, funktioniert
+tar -tf archive.tar                 # korrekt, funktioniert
+tar -f archive.tar -cv file1 file2  # korrekt, funktioniert
+
+tar -cfv archive.tar file1 file2    # funktioniert NICHT
+tar -ft archive.tar                 # funktioniert NICHT
+```
+
+##### Archiv aus Dateien erstellen
+```bash
+tar -cf archive.tar file1.txt file2.txt file3.txt 
+tar --create --file archive.tar file1.txt file2.txt file3.txt 
+```
+
+##### Archiv aus einem Verzeichnis erstellen
+```bash
+tar -cf archive.tar /absolute/path/to/dir
+tar -cf archive.tar relativ/path/to/dir
+```
+
+> [!NOTE] 
+> Pfadangaben werden immer mit archiviert! Wir müssen uns also im Vorhinein Gedanken machen, ob wir einen relativen oder absoluten Pfad angeben.
+> Geben wir einen relativen Pfad an, so archiviert `tar` den Pfad auch als relativ.
+> Übergeben wir `tar` jedoch einen absoluten Pfad zu einem Verzeichnis (oder einer Datei), entfernt `tar` standardmässig den ersten `/` (`tar: Removing leading '/' from member names`) - `tar` macht also aus einem absoluten Pfad einen relativen Pfad. 
+> So verhindern wir, dass beim extrahieren des Archivs (versehentlich) eine bereits bestehende Datei überschrieben wird.
+
+#### Archiv extrahieren
+```bash
+tar -xf archive.tar
+tar --extract --file archive.tar
+```
+
+#### einzelne Dateien aus Archiv extrahieren
+```bash
+tar -xf archive.tar file1.txt
+tar --extract --file archive.tar file1.txt
+```
+
+Um einzelne Dateien aus dem Archiv zu extrahieren, geben wir den Dateinamen nach dem Archivnamen an. Die Autocompletion mit Tab funktioniert hier!
+
+#### Die Option -v / --verbose gibt eine Rückmeldung darüber, was tar macht
+```bash
+tar -xvf archive.tar
+tar --extract --verbose --file archive.tar
+```
+#### Inhalt eines Archivs anzeigen/auflisten
+```bash
+tar -tf archiv.tar
+tar --list --file archive.tar
+
+tar -tvf archiv.tar
+tar --list --verbose --file archive.tar
+```
+
+`-t` steht hier für *Test* - wir testen den Inhalt des Archivs. Übergeben wir hier zusätzlich die Option `-v`, so gibt `tar` zusätzlich die Metainformationen zu einer Datei aus, analog zur Ausgabe von `ls -l`.
+
+#### Datei einem bestehenden Archiv hinzufügen
+```bash
+tar -rf archive.tar other_file.txt
+tar --append --file archive.tar other_file.txt
+```
+
+
+### Komprimierung
+
 
 
 
