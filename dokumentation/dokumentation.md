@@ -882,13 +882,104 @@ tar -rf archive.tar other_file.txt
 tar --append --file archive.tar other_file.txt
 ```
 
+### Komprimierung mit `gzip`, `bzip2` und `xz`
 
-### Komprimierung
+Durch die Komprimierung können wir **eine einzelne** Datei mit Hilfe bestimmter Algorithmen (verlustfrei) in ihrer Grösse verkleinern.
+
+*Analogie Komprimierung:* getrocknete Handtücher, die im Wasser wieder gross werden
+
+*Analogie Archivierung:* einzelne Blumen werden zu einem Strauss gebunden
+
+Um **mehrere** Dateien bzw. ganze Verzeichnisse zu komprimieren, müssen wir zusätzlich im Vorfeld die *Archivierung* anwenden. Bestimmte Programme in Windows-Systemen vereinen diese beiden Konzepte unter einer Haube. Wir müssen uns jedoch merken, dass dies grundsätzlich zwei komplett verschiedene Konzepte sind.
+
+Auch unter Linux ist es möglich beide Schritte auf einmal mit dem Kommando `tar` durchzuführen, dabei ruft `tar` im Hintergrund jedoch die jeweiligen Kommandos zur Komprimierung auf.
+
+Unter Linux nutzen wir standardmässig drei verschiedene Tools zur Komprimierung: `gzip`, `bzip2` und `xz`.
+
+>[!NOTE]
+> Sowohl bei der Komprimierung als auch bei der Dekomprimierung wird die jeweilige Originaldatei nicht behalten, sondern ersetzt.
+> Dies können wir mit der Option `-k` (`--keep`) umgehen.
+
+### Vergleich der drei Komprimierungsalgorithmen
+
+Vergleich der Geschwindigkeiten und resultierenden Grössen beim Komprimieren:
+
+![vergleich-komprimierung](./images/vergleich-komprimierung.png)
+Vergleich der Geschwindigkeiten beim Dekomprimieren:
+
+![vergleich-dekomprimierung](./images/vergleich-dekomprimierung.png)
+Zusammenfassend lassen sich folgende Aussagen über die drei Komprimierungsalgorithmen treffen:
+
+- `gzip` ist am schnellsten bei der Komprimierung, die komprimierte Datei ist aber nicht besonders klein
+- `bzip2` braucht lange für die Komprimierung und die Dekomprimierung, erzeugt aber eine ziemlich kleine Datei
+- `xz` braucht ziemlich lange bei der Komprimierung, liegt bei der Kompressionsrate zwischen den beiden anderen, ist aber sehr schnell bei der Dekomprimierung
+
+Es gibt also für alle drei bestimmte Anwendungsfälle, in denen sie ihre Stärken ausspielen können.
+
+>[!NOTE] 
+>Unser Beispiel begünstigt ältere Komprimierungsalgorithmen. In einem echten Beispiel würde `xz` auch die höchste Kompressionsrate erzielen. `xz` ist besonders auf die Komprimierung von Quellcode optimiert. Das schnellste Tool ist immer noch `gzip`, allerdings mit der "schlechtesten" Kompressionsrate.
+
+### Erstellen und Entpacken eines komprimierten Archivs direkt mit `tar`
+
+#### gzip komprimiertes Archiv erstellen
+```bash
+tar -czf archiv.tar.gz somdir/
+tar -czvf archiv.tar.gz somdir/     # verboser Output
+```
+`-z` ruft also `gzip` auf
+
+#### bzip2 komprimiertes Archiv erstellen
+```bash
+tar -cjf archiv.tar.bz2 somdir/
+tar -czjf archiv.tar.bz2 somdir/     # verboser Output
+```
+`-j` ruft also `bzip2` auf
+
+#### xz komprimiertes Archiv erstellen
+```bash
+tar -cJf archiv.tar.xz somdir/
+tar -cJvf archiv.tar.xz somdir/     # verboser Output
+```
+`-J` ruft also `xz` auf
+
+#### Komprimiertes Archiv entpacken
+##### mit gzip komprimiertes Archiv entpacken
+```bash
+tar -xzf archiv.tar.gz
+tar -xzvf archiv.tar.gz
+```
+##### mit bzip2 komprimiertes Archiv entpacken
+```bash
+tar -xjf archiv.tar.bz2
+tar -xzjf archiv.tar.bz2
+```
+##### mit xz komprimiertes Archiv entpacken
+```bash
+tar -xJf archiv.tar.xz
+tar -xJvf archiv.tar.xz
+```
+##### automatisch jeweiligen Algorithmus ermitteln, Archiv dekomprimieren und Dateien extrahieren
+```bash
+tar -xf archiv.tar.gz
+tar -xf archiv.tar.bz2
+tar -xf archiv.tar.xz
+```
+
+>[!NOTE]
+> Aktuelle Versionen von `tar` erkennen beim Extrahieren den verwendeten Komprimierungsalgorithmus automatisch (auch unabhängig von der Dateiendung). Dieser braucht also nicht zwingend mit angegeben zu werden. 
+
+#### Erklärung der Optionen:
+
+- `-c`, `--create`  erstellt ein neues Archiv
+- `-x`, `--extract`  entpackt ein Archiv
+- `-f`, `--file`  gibt den Dateinamen des Archivs an (immer direkt danach)
+ 
+- `-z`, `--gzip`  wendet gzip-Kompression an
+- `-j`, `--bzip2`  wendet bzip2-Kompression an
+- `-J`, `--xz`  wendet xz-Kompression an
 
 
-
-
-
+TODO zip
 
 
 
