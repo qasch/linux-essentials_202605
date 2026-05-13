@@ -1327,14 +1327,249 @@ sudo apt clean
 
 **Achtung:** Dies ist eine vereinfachte Darstellung des Prozesses, der so zwar funktionert aber gewisse Besonderheiten/Vorsichtsmassnahmen ausser acht lässt.
 
+## Benutzerkonten
+
+### Root Acount
+
+Der Benutzer `root` ist der *SuperUser* eines Linux Systems. Er ist der einzige Benutzer, welcher volle Rechte auf das System hat, also alles darf. Er muss auf jedem System existieren, damit dieses lauffähig ist, beispielsweise um während des Bootvorgangs einzelne Dienste zu starten usw.
+
+### Reguläre Benutzer
+
+Alle *regulären* Benutzer haben **eingeschränkte** Rechte. Sie dürfen z.B. nicht alle Kommandos ausführen oder generell irgendwelche Änderungen am System vornehmen. 
+
+Im Hintergrund wird das mehr oder weniger alles über die Berechtigungen an Dateien geregelt.
+
+Reguläre Benutzer können sich am System anmelden, eine Shell starten und so interaktiv Kommandos ausführen. Dazu haben sie in der `/etc/passwd` eine *Login Shell* zugewiesen.
+
+### Systembenutzer / Servicenutzer / Pseudobenutzer
+
+Es gibt eine weitere Bentuzergruppe mit eingeschränkten Rechten. Das fällt uns auf, wenn wir die Datei `/etc/passwd` inspizieren. Die Mehrzahl der Benutzer haben wir gar nicht selbst angelegt, sie wurden automatisch vom System erzeugt, als bestimmte Dienste/Services installiert wurden.
+
+Genau das ist der Sinn dieser Benutzer: So können bestimmte Dienste bzw. Prozesse mit deren Berechtigungen ausgeführt werden um die Sicherheit des Systems zu erhöhen. Ein kompromittierter Dienst erhält so also nicht direkt Zugriff auf das gesamte System.
+
+Beispiel: `www-data` für Webserver wie *Apache oder Nginx* - selbst wenn ein Angreifer den Webserver übernimmt, kann er nicht auf andere Systemdateien zugreifen.
+
+Pseudobenutzer haben keine Login-Shell, ihnen wird `/usr/sbin/nologin` zugewiesen. Sie können sich also nicht am System anmelden und Kommandos ausführen.
+
+## Benutzer und Gruppen
+
+### Benutzer anlegen mit `useradd`
+
+Mit `useradd` (auf allen Linux Systemen verfügbar) können wir Benutzer anlegen.
+
+Obwohl ein Eintrag für ein Home-Verzeichnis in der `/etc/passwd` erzeugt wird, wird dies **nicht** angelegt:
+
+```bash
+useradd <user>
+```
+
+Die Option `-m` bewirkt, dass unterhalb von `/home` ein Verzeichnis mit dem Namen des Benutzers erzeugt und alle Dateien aus `/etc/skel` dorthin kopiert werden:
+
+```bash
+useradd -m <user>
+useradd --create-home <user>
+```
+
+Benutzer eine Login-Shell zuweisen:
+```bash
+useradd -s /bin/bash <user>
+useradd --shell /bin/bash <user>
+```
+
+Kommentarfeld für den vollen Namen des Benutzers und weitere Informationen:
+```bash
+useradd -c "Voller Name des Benutzers" <user>
+useradd --comment "Voller Name des Benutzers" <user>
+```
+
+Neuen User eine bestimmte Primäre Gruppe zuordnen:
+```bash
+useradd -g <primary-group> <user>
+```
+
+Neuen User einer Liste von zusätzlichen Gruppen zuordnen:
+```bash
+useradd -G <supplementary-group-1>,<supplementary-group-2> <user>
+```
+
+Standarbeispiel zum Anlegen eines Benutzers:
+```bash
+useradd -m -c "Tux Tuxedo" -s /bin/bash tux
+```
+
+>[!NOTE]
+> `useradd` kann selbst kein Passwort generieren. Es gibt zwar die Option `-p` bzw. `--password`, dieser muss aber ein Passwort-Hash im Format für die `/etc/shadow` übergeben werden.
+> Normalerweise führen wir einfach ein `passwd <user>` nach Erstellung eines neues Benutzerkontos aus, um dem User ein Passwort zu geben.
+
+### Benutzerkonfiguration ändern mit `usermod`
+
+Mit dem Kommando `usermod` können wir die Benutzerkonfiguration nachträglich wieder ändern. Die Optionen sind denen von `useradd` sehr ähnlich. 
+
+Ändern der Login Shell von `korni` zur `ksh`:
+
+```bash
+usermod -s /usr/bin/ksh korni
+```
+
+### Gruppen
+
+Mit Gruppen können mehrere Benutzer zusammengefasst und ihnen gemeinsame Berechtigungen auf Dateien und Verzeichnisse gegeben werden.
+
+Im Unterschied zu Windows können Gruppen nur einzelne Benutzer enthalten, keine weiteren Gruppen.
+
+Für die Anzeige der Gruppenzugehörigkeiten kann man die Kommandos `groups` oder `id` benutzen.
+
+#### Primäre Gruppe
+Jeder Benutzer hat genau eine primäre Gruppe. Diese ist in `/etc/passwd` eingetragen. In der Regel hat sie den gleichen Namen wie der Benutzer. Sie ist nötig, da beim Erstellen von Dateien diese einem Benutzer und einer Gruppe zugewiesen werden müssen.
+
+#### Sekundäre Gruppen
+Ein Benutzer kann aber auch mehreren zusätzlichen Gruppen (*supplementary groups*) angehören. Die Gruppen und Zugehörigkeiten sind in der `/etc/group` eingetragen.
+
+### Gruppe erstellen:
+Auf allen Linux Systemen existiert das Kommando `groupadd`
+```bash
+groupadd <gruppe>
+```
+
+### Benutzer einer Gruppe hinzufügen:
+Auch die Gruppenzugehörigkeiten passen wir mit dem Kommando `usermod` an:
+```bash
+usermod -g <primary-group> <user>
+usermod -G <absolute-list-of-supplementary-groups> <user>
+usermod -aG <group1>,<group2>,<group3> <user>
+```
+
+>[!WARNING] 
+> Vorsicht mit der Option `-G`, diese erwartet eine absolute Liste von Gruppen, die der User angehören soll. Gehört der User bereits einer Gruppe an, die hier nicht genannt ist, wird er aus dieser Gruppe entfernt.
+>
+> Möchten wir einen User einer Gruppe hinzufügen, die bestehenden Gruppenzugehörigkeiten aber nicht verändern, nutzen wir zusätzlich die Opione `-a` (steht für `--append`).
+
+Damit Gruppenzugehörigkeiten gültig werden, muss die Datei `/etc/group` neu eingelesen werden. Dies geschieht z.B. wenn der Benutzer muss sich neu anmeldet bzw. eine neue Login-Shell startet. 
+
+Um die Gruppenzugehörigkeit in der aktuellen Shell zu aktualisieren, kann auch das Kommando `newgrp <gruppe>` genutzt werden.
+
+### Passwörter
+Passwörter werden nicht in der `/etc/passwd` gespeichert, sondern in der Datei `/etc/shadow`. Dafür gibt es mindestens zwei Gründe:
+
+1. Die Datei `/etc/passwd` muss von allen Usern auf dem System lesbar sein, wir wollen aber vermeiden, dass die Passwort-Hashes auslesbar sind
+2. In der Datei `/etc/passwd` werden Informationen über die User gespeichert, in der `/etc/shadow` Informationen über Passwörter (*Separation of Concern*)
+
+Passwörter sind immer gehasht und zusätzlich *gesaltet*, d.h. dass vor dem Hashen des Passworts eine bestimmte zufällig generierte Zeichenkette vor das Passwort geschrieben und dann der kommplette String (Salt + Passwort) gehasht wird.
+```text
+PW: Pa$$w0rd
+Salt: randomString
+
+randomStringPa$$w0rd  -> hieraus wird der HASH gebildet und mit dem hinterlegten abgeglichen
+```
+
+So wird vermieden, dass zwei gleiche Klartextpasswörter den gleichen Hash erhalten, was Attacken über *Rainbow Tables* (riesige Tabellen mit Hash-Werten und den dazugehörigen Klartextpasswörtern) verhindert.
+
+Das Kommando `useradd` kann selbst keine Passwörter generieren! Wir rufen dazu nach dem Erstellen eines neuen Users das Kommando `passwd` auf.
+
+>[!NOTE] 
+> Wir können dem Benutzer auch bereits beim Erzeugen ein Passwort mitgeben, sonst ist eine interaktive Anmeldung am System nicht möglich.
+
+### Optino `-p` von `useradd` und `usermod`
+
+Mit der Option `-p` kann direkt beim Erzeugen eines neuen Users ein Passwort angegeben werden.
+
+**Wichtig:** Hier muss ein für das System passender *gesaltener* HASH angegeben werden. Der Eintrag wird exakt so in die `/etc/shadow` eingetragen, es würde also das Klartextpasswort in der Datei stehen. Zusätzlich wäre ein Login nicht möglich, da das eingegebene Passwort ja zuerst gehasht wird und dieser HASH dann mit dem in hinterlegten abgeglichen wird.
+```bash
+useradd -p "PASSWORDHASH" <user>
+useradd --password "PASSWORDHASH" <user>
+```
+
+Schwer ist das nicht wirklich - wir können dazu das Kommando `openssl` verweden:
+```bash
+openssl passwd -6 PASSWORT
+```
+
+Die Option `-6` weist `openssl` an, den für Linux empfohlenen sicheren *SHA-512* Algorithmus zu verwenden.
+
+In einem Rutsch sähe das folgendermassen aus:
+```bash
+useradd -m -c "User mit Passwort" -p $(openssl passwd -6 'My!Secret#Password') -s /bin/bash userwithpass
+```
+
+### passwd
+Das Kommando ermöglicht die Änderung von Passwörtern. Mit Root-Rechten können so die Passwörter aller Benutzer geändert werden:
+```bash
+passwd <user>
+```
+
+Als regulärer Benutzer kann man damit sein eigenes Paswsort ändern:
+```bash
+passwd
+```
+
+### chsh
+Mit `chsh` kann ein Benutzer seine Login Shell ändern bzw. kann `root` die Login Shells jedes Users ändern.
+```bash
+chsh -s /bin/bash
+```
+
+### adduser
+
+`adduser` ist ein Perl-Skript, welches u.a. die Kommandos  `useradd` und `passwd` ausführt. Es ist *interaktiv*, wir brauchen keine Optionen zu übergeben, bestimmte Einstellungen werden abgefragt, vor allem fragt `adduser` direkt nach einem Passwort für den neuen Benutzer. Es sind andere Default-Werte gesetzt als bei `useradd`, z.B. die `bash` als Login-Shell.
+
+>[!NOTE]
+> Dieses Kommando ist aber nur auf Debian-basierten Distributionen vorhanden.
+
+### Relevante Dateien beim Anlegen von Benutzern
+Beim Anlegen von Benutzern (mit Passwort) durch die Kommandos `useradd` und `passwd` bzw. `adduser` passiert übrigens nur folgendes:
+
+- Ein Eintrag in der `/etc/passwd` mit den Benutzerinformationen wird erzeugt
+- Die primäre Gruppe wird zur `/etc/group` hinzugefügt (und eventuell andere Gruppenzugehörigkeiten angepasst)
+- Das Passwort wird in die `/etc/shadow` eingetragen
+- In der `/etc/gshadow` wird ein Eintrag ohne Passwort erzeugt (diese Datei bzw. Gruppenpasswörter werden in der Praxis aber eh nicht genutzt)
+- ggf. wird ein Heimatverzeichnis erzeugt, die Dateien aus `/etc/skel` dort hinein kopiert und die Berechtigungen angepasst
+
+Das war's. Nichts weiter. Keine Magie, nichts im Hintergrund. Nur Veränderung von Textdateien. Das ist ein gutes Beispiel dafür, wie die Konfiguration eines Linux System generell funktioniert. Kommandos editieren Textdateien. Sie sind zur Vereinfachung und zur Vermeidung von Fehlern da, aber grundsätzlich könnten wir das gesamte System mit einem Editor konfigurieren...
+
+## Berechtigungen
 
 
 
+### Kommando
+
+    chmod
+
+### symbolische Rechtevergabe
+
+r -> read
+w -> write
+x -> eXecute
+
+u -> owner/user
+g -> group
+o -> others
+
+   U   G   O
+- rw- rw- r-- 1 tux tux 0 May 13 10:57 somefile
+
+    - Recht(e) entziehen
+    + Recht(e) hinzufügen
+    = Recht(e) setzen
 
 
+### numerische/oktale Rechtevergabe
+
+4 -> read
+2 -> write
+1 -> eXecute
+
+1 -> 001
+2 -> 010
+4 -> 100
+
+ 6  6  0
+110110000
+rw-rw---- 1 tux tux 0 May 13 10:57 somefile
 
 
-
+ 6  4  4
+110100100
+rw-r--r-- 1 tux tux 0 May 13 10:57 somefile
 
 
 
