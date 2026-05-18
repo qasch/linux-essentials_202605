@@ -1528,57 +1528,143 @@ Das war's. Nichts weiter. Keine Magie, nichts im Hintergrund. Nur Veränderung v
 
 ## Berechtigungen
 
+Berechtigungen in Linux steuern den Zugriff auf Dateien und Verzeichnisse für *Benutzer* und *Gruppen*. Sie legen fest, wer lesen (`r`), schreiben (`w`) und ausführen (`x`) darf.
+
+Der folgende Auszug von `ls -l file1.txt` sagt folgendes aus:
+```bash
+  u  g  o
+-rw-r--r-- 1 tux tux 5 Feb 12 13:09 file1.txt
+```
+
+- Der User/Besitzer (`u`) darf den Inhalt der Datei lesen und ändern (`rw`)
+- Mitglieder der Gruppe (`g`) dürfen den Inhalt der Datei nur lesen (`r`)
+- Alle anderen Benutzer, die weder der Besitzer, noch Mitglieder der Gruppe sind, dürfen den Inhalt der Datei lesen (`r`)
+
+### Bedeutung der Berechtigungen für Dateien
+
+`r` (*read*) -> Dateiinhalt lesen
+`w` (*write*) -> Dateiinhalt ändern -> aber **nicht** Datei löschen
+`x` (*eXecute*) -> Datei ausführen
+
+### Bedeutung der Berechtigungen für Verzeichnisse
+
+`r` (*read*) -> Verzeichnisinhalt lesen bzw. das Auflisten der Namen der Dateien
+`w` (*write*) -> Verzeichnisinhalt ändern -> Dateien erstellen, verschieben und löschen
+`x` (*eXecute*) -> Verzeichnis betreten 
+
+>[!IMPORTANT] 
+> Es macht **keinen wirklichen Sinn** wenn das *Execute Bit* bei Verzeichnissen **nicht** gesetzt ist. Dann wird alles etwas seltsam... Wir brauchen dieses Bit, damit Verzeichnisse wie gewünscht funktionieren.
+
+### Symbolische Rechtevergabe
+Hierbei werden *Symbole* für die Berechtigungen verwendet. Diese Art der Rechtevergabe ist sehr intuitiv und eignet sich besonders dafür, einzelne Berechtigungen hinzuzufügen oder zu entfernen, ohne die bestehenden Berechtigungen zu verändern. Es ist auch einfach, diese Vorgänge wieder rückgängig zu machen.
+
+#### Symbole
+
+`r` -> read
+`w` -> write
+`x` -> eXecute
+
+`u` -> user/owner
+`g` -> group
+`o` -> others (weder owner noch group)
+`a` -> all
+
+`+` -> hinzufügen
+`-` -> entziehen
+`=` -> setzten
+
+Der Gruppe Schreibrechte hinzufügen:
+```bash
+chmod g+w file1.txt
+```
+
+Dem Besitzer Leserechte entfernen:
+```bash
+chmod o-r file1.txt
+
+```
+Besitzer und Gruppe Schreib- und Leserechte
+```bash
+chmod ug+rw file1.txt
+```
+
+Dem Besitzer Ausführungsrechte hinzufügen, der Gruppe Schreibrechte entziehen, allen anderen Leserechte hinzufügen.
+```bash
+chmod u+x,g-w,o+r file1.txt
+```
+
+### Numerische/Oktale Rechtevergabe
+Die numerische oder oktale Rechtevergabe verwendet Zahlen des Oktalsystems, um Berechtigungen gleichzeitig für Besitzer, Gruppe und Others zu vergeben. 
+
+Es eignet sich besonders für Situationen, in denen wir eine Datei oder Verzeichnis in einen expliziten Zustand versetzten wollen.
+
+Interessant ist die Herkunft der Zahlen für die Berechtigungen. Übersetzen wir sie doch einmal ins Binärsystem:
+
+| Symbol | Okal | Binär |
+| ------ | ---- | ----- |
+| `r` | `4` | `100` |
+| `w` | `2` | `010` |
+| `x` | `1` | `001` |
+| `-` | `0` | `000` |
+
+Wir sehen, dass das gesetzte Bit *wandert* bzw. sich immer um eine Position verschiebt. Sehen wir uns das einmal im Listing von `ls -l` an:
+
+```bash
+  7  6  4
+ 111110100
+-rwxr--r-- 1 tux tux 5 Feb 12 13:09 file1.txt
+
+111 -> 7
+110 -> 6
+100 -> 4
+```
+
+Ist also ein bestimmtes Recht gesetzt, bedeutet dass, das hier binär auch eine `1` steht. Wir sehen sozusagen ein Abbild dessen, was wirklich im Speicher passiert. Toll, oder?
+
+### Sonderbits
+
+Zusätzlich gibt es noch drei Sonderbits, die gewisse Dinge ermöglichen, damit unser System funktioniert:
+
+#### SUID Bit
+
+Auf eine **ausführbare Binärdatei** gesetzt, bewirkt das SUID Bit, dass die Datei mit den Berechtigungen des **Besitzers** der Datei ausgeführt wird und **nicht** mit den Berechtigungen des aufrufenden Users.
 
 
-### Kommando
+##### Beispiel `/etc/passwd`
+```bash
+ls -l /usr/bin/passwd
 
-    chmod
+-rwsr-xr-x 1 root root 68248 Feb 24  2025 /usr/bin/passwd
 
-### symbolische Rechtevergabe
+ls -l /etc/shadow
 
-r -> read
-w -> write
-x -> eXecute
+-rw-r----- 1 root shadow 1619 Feb 24 2025 /etc/shadow
+```
 
-u -> owner/user
-g -> group
-o -> others
+Das Kommando kann also von einem regulären Benutzer ausgeführt werden, läuft dann aber mit den Rechten des Users `root` und kann somit den Inhalt der Datei `/etc/shadow` ändern.
 
-   U   G   O
-- rw- rw- r-- 1 tux tux 0 May 13 10:57 somefile
+#### SGID Bit
 
-    - Recht(e) entziehen
-    + Recht(e) hinzufügen
-    = Recht(e) setzen
+Auf eine **ausführbare Binärdatei** gesetzt, bewirkt das SGID Bit, dass die Datei mit den Berechtigungen der **Gruppe** der Datei ausgeführt wird und **nicht** mit den Berechtigungen des aufrufenden Users.
 
+Auf ein Verzeichnis gesetzt, bewirkt es, dass neu darin erstellte Dateien der Gruppe zugewiesen werden, der das Verzeichnis gehört und nicht der primären Gruppe des erstellenden Users.
 
-### numerische/oktale Rechtevergabe
+```bash
+ls -ld /var/mail
 
-4 -> read
-2 -> write
-1 -> eXecute
+drwxrwsr-x 2 root mail 4096 Feb 20 09:26 /var/mail/
+```
 
-1 -> 001
-2 -> 010
-4 -> 100
+So werden alle E-Mails der Gruppe `mail` zugeordnet und können vom Mailserver hinzugefügt und auch gelöscht werden.
 
- 6  6  0
-110110000
-rw-rw---- 1 tux tux 0 May 13 10:57 somefile
+#### Sticky Bit
 
+Auf ein Verzeichnis gesetzt, bewirkt es, dass darin enthaltene Dateien nur noch vom Besitzer der Datei geändert oder gelöscht werden dürfen.
+```bash
+ls -ld tmp
 
- 6  4  4
-110100100
-rw-r--r-- 1 tux tux 0 May 13 10:57 somefile
+drwxrwxrwt 8 root root 4096 Feb 20 09:30 /tmp
+```
 
-
-
-
-
-
-
-
-
-
-
+So ist es einem regulären Benutzer nicht möglich, Dateien eines anderen Benutzers zu ändern oder zu löschen.
 
