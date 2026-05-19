@@ -12,7 +12,7 @@ Erstellt zusätzlich einen Ordner `origdir` in `originals` in welchem sich die D
 
 ## Übung 1: Softlink anlegen
 
-- Erstellt nun jeweils einen symbolischen Link von `orig1` nach `links/softlink1`.
+- Erstellt nun jeweils einen **symbolischen Link** von `orig1` nach `links/softlink1`.
 - Prüft die Erstellung des Links mit `ls -l ~/hard-und-softlinks/links/softlink1`
 - Ändert nun den Inhalt des Links `softlink1`. Prüft nach, ob sich der Inhalt auch in der Originaldatei geändert hat. 
 - Löscht nun die Originaldatei `orig1` und versucht anschließend, über den Link `links/softlink1` auf den Inhalt der Datei zuzugreifen.
